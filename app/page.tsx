@@ -17,8 +17,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [ingesting, setIngesting] = useState(false);
-  const [ingestResult, setIngestResult] = useState<{ saved: number; duplicates: number } | null>(null);
+  const [syncing, setSyncing] = useState<'google' | 'slack' | null>(null);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -30,15 +30,21 @@ export default function DashboardPage() {
       });
   }, [router]);
 
-  async function handleIngest() {
-    setIngesting(true);
-    setIngestResult(null);
+  async function handleSync(type: 'google' | 'slack') {
+    setSyncing(type);
+    setSyncResult(null);
     try {
-      const res = await fetch('/api/ingest', { method: 'POST' });
+      const res = await fetch(`/api/sync/${type}`, { method: 'POST' });
       const data = await res.json();
-      setIngestResult(data.total);
+      if (type === 'google') {
+        setSyncResult(`Gmail ${data.emails}건 · 캘린더 ${data.events}건 저장`);
+      } else {
+        setSyncResult(`Slack ${data.messages}건 저장`);
+      }
+    } catch {
+      setSyncResult('오류 발생');
     } finally {
-      setIngesting(false);
+      setSyncing(null);
     }
   }
 
@@ -73,21 +79,27 @@ export default function DashboardPage() {
               📊 {t('weeklyReports')}
             </Link>
 
-            {/* 데이터 수집 (오너만) */}
+            {/* 데이터 동기화 (오너만) */}
             {isOwner && (
               <div className="flex items-center gap-2">
-                {ingestResult && (
-                  <span className="text-xs text-green-600">
-                    +{ingestResult.saved} 저장, {ingestResult.duplicates} 중복
-                  </span>
+                {syncResult && (
+                  <span className="text-xs text-green-600">{syncResult}</span>
                 )}
                 <button
-                  onClick={handleIngest}
-                  disabled={ingesting}
-                  className="flex items-center gap-1.5 text-xs bg-gray-800 text-white px-3 py-1.5 rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
+                  onClick={() => handleSync('google')}
+                  disabled={syncing !== null}
+                  className="flex items-center gap-1.5 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {ingesting ? <Spinner size="sm" /> : <span>↓</span>}
-                  {ingesting ? t('ingesting') : t('ingest')}
+                  {syncing === 'google' ? <Spinner size="sm" /> : <span>📧</span>}
+                  {syncing === 'google' ? '동기화 중...' : 'Gmail · Calendar'}
+                </button>
+                <button
+                  onClick={() => handleSync('slack')}
+                  disabled={syncing !== null}
+                  className="flex items-center gap-1.5 text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                >
+                  {syncing === 'slack' ? <Spinner size="sm" /> : <span>💬</span>}
+                  {syncing === 'slack' ? '동기화 중...' : 'Slack'}
                 </button>
               </div>
             )}
