@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [syncing, setSyncing] = useState<'google' | 'slack' | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [briefing, setBriefing] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -29,6 +30,16 @@ export default function DashboardPage() {
         setAuthLoading(false);
       });
   }, [router]);
+
+  async function handleGenerateBrief() {
+    setBriefing(true);
+    try {
+      await fetch('/api/ai/daily-brief', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      window.location.reload();
+    } finally {
+      setBriefing(false);
+    }
+  }
 
   async function handleSync(type: 'google' | 'slack') {
     setSyncing(type);
@@ -78,6 +89,18 @@ export default function DashboardPage() {
             >
               📊 {t('weeklyReports')}
             </Link>
+
+            {/* 브리핑 생성 (오너만) */}
+            {isOwner && (
+              <button
+                onClick={handleGenerateBrief}
+                disabled={briefing}
+                className="flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              >
+                {briefing ? <Spinner size="sm" /> : <span>✨</span>}
+                {briefing ? '생성 중...' : '브리핑 생성'}
+              </button>
+            )}
 
             {/* 데이터 동기화 (오너만) */}
             {isOwner && (
