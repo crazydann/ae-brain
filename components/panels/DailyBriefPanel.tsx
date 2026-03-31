@@ -31,8 +31,8 @@ export function DailyBriefPanel() {
   useEffect(() => { load(); }, [load]);
 
   const emptyGuide = lang === 'ko'
-    ? 'Claude Code 세션에서 "오늘 브리핑 만들어줘"라고 입력하면 여기에 표시됩니다.'
-    : 'Ask Claude Code "generate today\'s brief" and it will appear here.';
+    ? 'Claude.ai에서 "오늘 브리핑 만들어줘"라고 입력하면 여기에 자동으로 표시됩니다.'
+    : 'Ask Claude "generate today\'s brief" and it will appear here automatically.';
 
   return (
     <Card title={`🤖 ${t('dailyBrief')}`} className="h-full">
